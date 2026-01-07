@@ -19,6 +19,7 @@ def check_password():
     st.title("🔒 Audit Firm Secure Login")
     password = st.text_input("Enter Office Password", type="password")
     if st.button("Login"):
+        # Matches your provided password
         if password == "Awesome2050@": 
             st.session_state["password_correct"] = True
             st.rerun()
@@ -56,6 +57,7 @@ if check_password():
         df = df.sort_values(by=sort_col)
 
         st.subheader("Client Database")
+        # Displaying 'id' is helpful for debugging, but you can hide it in hide_index
         st.dataframe(df, use_container_width=True, hide_index=True)
 
         st.divider()
@@ -63,41 +65,48 @@ if check_password():
         # --- Edit / Delete Section ---
         st.subheader("📝 Edit or Delete Client Details")
         
-        # Select client to modify
-        client_names = df['name'].tolist()
-        selected_client_name = st.selectbox("Select a client to modify:", client_names)
+        # Select client to modify - Using Name + ID to ensure uniqueness
+        client_options = {f"{row['name']} (ID: {row['id']})": row['id'] for _, row in df.iterrows()}
+        selected_option = st.selectbox("Select a client to modify:", list(client_options.keys()))
+        selected_id = client_options[selected_option]
         
-        # Get the current data for the selected client
-        client_info = df[df['name'] == selected_client_name].iloc[0]
+        # Pull the specific record data using the selected ID
+        client_info = df[df['id'] == selected_id].iloc[0]
         
         # Layout for Editing
-        with st.expander(f"Modify Details for {selected_client_name}", expanded=True):
+        with st.expander(f"Modify Details for {client_info['name']}", expanded=True):
             col1, col2 = st.columns(2)
             
             with col1:
-                edit_num = st.text_input("Client Number", value=client_info['client_num'])
-                edit_name = st.text_input("Customer Name", value=client_info['name'])
-                edit_uen = st.text_input("UEN", value=client_info['uen'])
+                edit_num = st.text_input("Client Number", value=str(client_info['client_num']))
+                edit_name = st.text_input("Customer Name", value=str(client_info['name']))
+                edit_uen = st.text_input("UEN", value=str(client_info['uen']))
             
             with col2:
                 # Find index of current month for the dropdown
-                month_idx = MONTHS.index(client_info['year_end']) if client_info['year_end'] in MONTHS else 0
+                current_month = str(client_info['year_end'])
+                month_idx = MONTHS.index(current_month) if current_month in MONTHS else 0
                 edit_month = st.selectbox("Year End", MONTHS, index=month_idx)
                 
-                status_idx = 0 if client_info['status'] == "Active" else 1
-                edit_status = st.selectbox("Client Status", ["Active", "Terminated"], index=status_idx)
+                status_list = ["Active", "Terminated"]
+                current_status = str(client_info['status'])
+                status_idx = status_list.index(current_status) if current_status in status_list else 0
+                edit_status = st.selectbox("Client Status", status_list, index=status_idx)
 
             # Buttons
             btn_col1, btn_col2, _ = st.columns([1, 1, 2])
             
-            if btn_col1.button("💾 Update Details", type="primary"):
-                update_client(client_info['id'], edit_num, edit_name, edit_uen, edit_month, edit_status)
-                st.success("Client updated!")
+            # Using the ID as an integer for the database calls
+            target_id = int(client_info['id'])
+
+            if btn_col1.button("✅ Update Details", type="primary", key="update_btn"):
+                update_client(target_id, edit_num, edit_name, edit_uen, edit_month, edit_status)
+                st.success("Client updated successfully!")
                 st.rerun()
                 
-            if btn_col2.button("🗑️ Delete Client"):
-                delete_client(client_info['id'])
-                st.warning("Client deleted.")
+            if btn_col2.button("🗑️ Delete Client", key="delete_btn"):
+                delete_client(target_id)
+                st.warning("Client record removed.")
                 st.rerun()
     else:
         st.info("No clients found. Use the sidebar to add your first client.")
