@@ -19,7 +19,7 @@ def check_password():
     st.title("🔒 Audit Firm Secure Login")
     password = st.text_input("Enter Office Password", type="password")
     if st.button("Login"):
-        if password == "Audit2024!": 
+        if password == "Awesome2050@": 
             st.session_state["password_correct"] = True
             st.rerun()
         else:
