@@ -37,3 +37,12 @@ def delete_client(client_id):
     c.execute("DELETE FROM clients WHERE id = ?", (client_id,))
     conn.commit()
     conn.close()
+def update_client(client_id, num, name, uen, month, status):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''UPDATE clients 
+                 SET client_num=?, name=?, uen=?, year_end=?, status=? 
+                 WHERE id=?''',
+              (num, name, uen, month, status, client_id))
+    conn.commit()
+    conn.close()
