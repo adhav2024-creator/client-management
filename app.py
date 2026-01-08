@@ -19,7 +19,6 @@ def check_password():
     st.title("🔒 Audit Firm Secure Login")
     password = st.text_input("Enter Office Password", type="password")
     if st.button("Login"):
-        # Matches your provided password
         if password == "Awesome2050@": 
             st.session_state["password_correct"] = True
             st.rerun()
@@ -30,6 +29,36 @@ def check_password():
 # --- 2. THE APP CONTENT ---
 if check_password():
     st.title("📂 Client Management System")
+
+    # Fetch data early to use in Dashboard
+    df = get_clients()
+
+    # --- DASHBOARD SECTION ---
+    if not df.empty:
+        st.subheader("📊 Practice Overview")
+        
+        # Metric Row
+        m_col1, m_col2, m_col3 = st.columns(3)
+        total_clients = len(df)
+        active_clients = len(df[df['status'] == 'Active'])
+        terminated_clients = len(df[df['status'] == 'Terminated'])
+
+        m_col1.metric("Total Clients", total_clients)
+        m_col2.metric("Active Portfolios", active_clients, delta_color="normal")
+        m_col3.metric("Terminated", terminated_clients, delta_color="inverse")
+
+        # Chart Row: Clients by Month
+        st.write("### 📅 Number of Clients by Year End Month")
+        
+        # Count clients per month and ensure order matches Jan-Dec
+        month_counts = df['year_end'].value_counts()
+        chart_data = pd.DataFrame({
+            'Month': MONTHS,
+            'Number of Clients': [month_counts.get(m, 0) for m in MONTHS]
+        }).set_index('Month')
+
+        st.bar_chart(chart_data, color="#29b5e8")
+        st.divider()
 
     # --- Sidebar: Add New Client ---
     st.sidebar.header("Add New Client")
@@ -49,31 +78,24 @@ if check_password():
                 st.error("Client Number and Name are required.")
 
     # --- Main Screen: View, Sort & Edit ---
-    df = get_clients()
-
     if not df.empty:
-        # Sorting
+        # Sorting & Table
+        st.subheader("📋 Client Database")
         sort_col = st.selectbox("Sort data by:", ["client_num", "year_end", "name"])
-        df = df.sort_values(by=sort_col)
-
-        st.subheader("Client Database")
-        # Displaying 'id' is helpful for debugging, but you can hide it in hide_index
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        df_sorted = df.sort_values(by=sort_col)
+        st.dataframe(df_sorted, use_container_width=True, hide_index=True)
 
         st.divider()
 
         # --- Edit / Delete Section ---
         st.subheader("📝 Edit or Delete Client Details")
         
-        # Select client to modify - Using Name + ID to ensure uniqueness
         client_options = {f"{row['name']} (ID: {row['id']})": row['id'] for _, row in df.iterrows()}
         selected_option = st.selectbox("Select a client to modify:", list(client_options.keys()))
         selected_id = client_options[selected_option]
         
-        # Pull the specific record data using the selected ID
         client_info = df[df['id'] == selected_id].iloc[0]
         
-        # Layout for Editing
         with st.expander(f"Modify Details for {client_info['name']}", expanded=True):
             col1, col2 = st.columns(2)
             
@@ -83,7 +105,6 @@ if check_password():
                 edit_uen = st.text_input("UEN", value=str(client_info['uen']))
             
             with col2:
-                # Find index of current month for the dropdown
                 current_month = str(client_info['year_end'])
                 month_idx = MONTHS.index(current_month) if current_month in MONTHS else 0
                 edit_month = st.selectbox("Year End", MONTHS, index=month_idx)
@@ -93,10 +114,7 @@ if check_password():
                 status_idx = status_list.index(current_status) if current_status in status_list else 0
                 edit_status = st.selectbox("Client Status", status_list, index=status_idx)
 
-            # Buttons
             btn_col1, btn_col2, _ = st.columns([1, 1, 2])
-            
-            # Using the ID as an integer for the database calls
             target_id = int(client_info['id'])
 
             if btn_col1.button("✅ Update Details", type="primary", key="update_btn"):
