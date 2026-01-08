@@ -32,28 +32,28 @@ if check_password():
     df = get_clients()
 
     if not df.empty:
-        # FIX 1: Explicitly convert client_num to numeric so sorting works
+        # 1. Ensure numeric sorting for client_num
         df['client_num'] = pd.to_numeric(df['client_num'], errors='coerce')
         
-        # FIX 2: Set months as categorical so they sort by calendar order, not alphabetical
+        # 2. Set months as categorical for calendar sorting
         df['year_end'] = pd.Categorical(df['year_end'], categories=MONTHS, ordered=True)
 
+        # 3. CAPITALIZE HEADERS
+        # This replaces underscores with spaces and capitalizes every word
+        df.columns = [col.replace('_', ' ').upper() for col in df.columns]
+
         st.subheader("📊 Practice Overview")
+        # Note: Metrics and logic below use capitalized names now
         m_col1, m_col2, m_col3 = st.columns(3)
         m_col1.metric("Total Clients", len(df))
-        m_col2.metric("Active Portfolios", len(df[df['status'] == 'Active']))
-        m_col3.metric("Terminated", len(df[df['status'] == 'Terminated']))
+        m_col2.metric("Active Portfolios", len(df[df['STATUS'] == 'Active']))
+        m_col3.metric("Terminated", len(df[df['STATUS'] == 'Terminated']))
 
-        st.write("### Client Load by Month")
-        month_counts = df['year_end'].value_counts().reindex(MONTHS, fill_value=0)
-        summary_data = pd.DataFrame([month_counts.values], columns=MONTHS, index=["Count"])
-        st.dataframe(summary_data, use_container_width=True)
         st.divider()
 
     # --- 3. SIDEBAR (ADD CLIENT) ---
     st.sidebar.header("Add New Client")
     with st.sidebar.form("add_form", clear_on_submit=True):
-        # FIX 3: Use number_input instead of text_input
         new_num = st.number_input("Client Number", min_value=1, step=1)
         new_name = st.text_input("Name of Customer")
         new_uen = st.text_input("UEN Number")
@@ -75,13 +75,14 @@ if check_password():
         
         filtered_df = df.copy()
         if search_query:
+            # Search logic updated for capitalized headers
             filtered_df = filtered_df[
-                filtered_df['name'].str.contains(search_query, case=False, na=False) | 
-                filtered_df['uen'].str.contains(search_query, case=False, na=False)
+                filtered_df['NAME'].str.contains(search_query, case=False, na=False) | 
+                filtered_df['UEN'].str.contains(search_query, case=False, na=False)
             ]
 
-        # Sorting Logic
-        sort_col = st.selectbox("Sort data by:", ["client_num", "year_end", "name"])
+        # Sorting Logic - using capitalized names
+        sort_col = st.selectbox("Sort data by:", ["CLIENT NUM", "YEAR END", "NAME"])
         df_sorted = filtered_df.sort_values(by=sort_col)
         
         st.dataframe(df_sorted, use_container_width=True, hide_index=True)
@@ -90,37 +91,38 @@ if check_password():
         # --- 5. EDIT / DELETE SECTION ---
         st.subheader("📝 Edit or Delete Client Details")
         
-        client_options = {f"{row['name']} (ID: {row['id']})": row['id'] for _, row in filtered_df.iterrows()}
+        # Mapping updated for capitalized headers
+        client_options = {f"{row['NAME']} (ID: {row['ID']})": row['ID'] for _, row in filtered_df.iterrows()}
         if client_options:
             selected_option = st.selectbox("Select a client to modify:", list(client_options.keys()))
             selected_id = client_options[selected_option]
-            client_info = df[df['id'] == selected_id].iloc[0]
+            client_info = df[df['ID'] == selected_id].iloc[0]
             
-            with st.expander(f"Modify Details for {client_info['name']}", expanded=True):
+            with st.expander(f"Modify Details for {client_info['NAME']}", expanded=True):
                 col1, col2 = st.columns(2)
                 with col1:
-                    # FIX 4: Use number_input for editing as well
-                    edit_num = st.number_input("Client Number", value=int(client_info['client_num']))
-                    edit_name = st.text_input("Customer Name", value=str(client_info['name']))
-                    edit_uen = st.text_input("UEN", value=str(client_info['uen']))
+                    edit_num = st.number_input("Client Number", value=int(client_info['CLIENT NUM']))
+                    edit_name = st.text_input("Customer Name", value=str(client_info['NAME']))
+                    edit_uen = st.text_input("UEN", value=str(client_info['UEN']))
                 with col2:
-                    current_month = str(client_info['year_end'])
+                    current_month = str(client_info['YEAR END'])
                     month_idx = MONTHS.index(current_month) if current_month in MONTHS else 0
                     edit_month = st.selectbox("Year End", MONTHS, index=month_idx)
                     
                     status_list = ["Active", "Terminated"]
-                    current_status = str(client_info['status'])
+                    current_status = str(client_info['STATUS'])
                     status_idx = status_list.index(current_status) if current_status in status_list else 0
                     edit_status = st.selectbox("Client Status", status_list, index=status_idx)
 
                 btn_col1, btn_col2, _ = st.columns([1, 1, 2])
                 if btn_col1.button("✅ Update Details", type="primary"):
-                    update_client(int(client_info['id']), edit_num, edit_name, edit_uen, edit_month, edit_status)
+                    # Use original ID to update
+                    update_client(int(client_info['ID']), edit_num, edit_name, edit_uen, edit_month, edit_status)
                     st.success("Updated!")
                     st.rerun()
                     
                 if btn_col2.button("🗑️ Delete Client"):
-                    delete_client(int(client_info['id']))
+                    delete_client(int(client_info['ID']))
                     st.warning("Deleted.")
                     st.rerun()
         else:
