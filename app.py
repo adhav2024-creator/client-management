@@ -25,35 +25,35 @@ def check_password():
             st.error("Wrong password.")
     return False
 
-# --- 2. THE APP CONTENT ---
+
 if check_password():
-    st.title("📂 Client Management System")
+    st.title(" Client Management System")
 
     df = get_clients()
 
-    # --- DASHBOARD SECTION ---
+  
     if not df.empty:
         st.subheader("📊 Practice Overview")
         
-        # Metric Row
+        
         m_col1, m_col2, m_col3 = st.columns(3)
         m_col1.metric("Total Clients", len(df))
         m_col2.metric("Active Portfolios", len(df[df['status'] == 'Active']))
         m_col3.metric("Terminated", len(df[df['status'] == 'Terminated']))
 
-        # Summary Table instead of Graph
-        st.write("### 📅 Client Load by Month")
+       
+        st.write("###  Client Load by Month")
         month_counts = df['year_end'].value_counts()
         summary_data = pd.DataFrame({
             'Month': MONTHS,
             'Count': [month_counts.get(m, 0) for m in MONTHS]
         })
         
-        # Display as a horizontal summary for quick reading
+        
         st.dataframe(summary_data.set_index('Month').T, use_container_width=True)
         st.divider()
 
-    # --- Sidebar: Add New Client ---
+    
     st.sidebar.header("Add New Client")
     with st.sidebar.form("add_form", clear_on_submit=True):
         new_num = st.text_input("Client Number")
@@ -70,11 +70,11 @@ if check_password():
             else:
                 st.error("Fields required.")
 
-    # --- Main Screen: View, Search & Edit ---
+   
     if not df.empty:
         st.subheader("📋 Client Database")
         
-        # --- SEARCH FEATURE ---
+       
         search_query = st.text_input("🔍 Search by Client Name or UEN", "")
         
         # Filter dataframe based on search
