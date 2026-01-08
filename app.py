@@ -25,38 +25,36 @@ def check_password():
             st.error("Wrong password.")
     return False
 
-
 if check_password():
-    st.title(" Client Management System")
+    st.title("Client Management System")
 
+    # --- 2. DATA FETCHING & TYPE CASTING ---
     df = get_clients()
 
-  
     if not df.empty:
+        # FIX 1: Explicitly convert client_num to numeric so sorting works
+        df['client_num'] = pd.to_numeric(df['client_num'], errors='coerce')
+        
+        # FIX 2: Set months as categorical so they sort by calendar order, not alphabetical
+        df['year_end'] = pd.Categorical(df['year_end'], categories=MONTHS, ordered=True)
+
         st.subheader("📊 Practice Overview")
-        
-        
         m_col1, m_col2, m_col3 = st.columns(3)
         m_col1.metric("Total Clients", len(df))
         m_col2.metric("Active Portfolios", len(df[df['status'] == 'Active']))
         m_col3.metric("Terminated", len(df[df['status'] == 'Terminated']))
 
-       
-        st.write("###  Client Load by Month")
-        month_counts = df['year_end'].value_counts()
-        summary_data = pd.DataFrame({
-            'Month': MONTHS,
-            'Count': [month_counts.get(m, 0) for m in MONTHS]
-        })
-        
-        
-        st.dataframe(summary_data.set_index('Month').T, use_container_width=True)
+        st.write("### Client Load by Month")
+        month_counts = df['year_end'].value_counts().reindex(MONTHS, fill_value=0)
+        summary_data = pd.DataFrame([month_counts.values], columns=MONTHS, index=["Count"])
+        st.dataframe(summary_data, use_container_width=True)
         st.divider()
 
-    
+    # --- 3. SIDEBAR (ADD CLIENT) ---
     st.sidebar.header("Add New Client")
     with st.sidebar.form("add_form", clear_on_submit=True):
-        new_num = st.text_input("Client Number")
+        # FIX 3: Use number_input instead of text_input
+        new_num = st.number_input("Client Number", min_value=1, step=1)
         new_name = st.text_input("Name of Customer")
         new_uen = st.text_input("UEN Number")
         new_month = st.selectbox("Year End Month", MONTHS)
@@ -70,42 +68,39 @@ if check_password():
             else:
                 st.error("Fields required.")
 
-   
+    # --- 4. MAIN DISPLAY & SEARCH ---
     if not df.empty:
         st.subheader("📋 Client Database")
-        
-       
         search_query = st.text_input("🔍 Search by Client Name or UEN", "")
         
-        # Filter dataframe based on search
+        filtered_df = df.copy()
         if search_query:
-            df = df[
-                df['name'].str.contains(search_query, case=False, na=False) | 
-                df['uen'].str.contains(search_query, case=False, na=False)
+            filtered_df = filtered_df[
+                filtered_df['name'].str.contains(search_query, case=False, na=False) | 
+                filtered_df['uen'].str.contains(search_query, case=False, na=False)
             ]
 
-        # Sorting
+        # Sorting Logic
         sort_col = st.selectbox("Sort data by:", ["client_num", "year_end", "name"])
-        df_sorted = df.sort_values(by=sort_col)
+        df_sorted = filtered_df.sort_values(by=sort_col)
         
         st.dataframe(df_sorted, use_container_width=True, hide_index=True)
-
         st.divider()
 
-        # --- Edit / Delete Section ---
+        # --- 5. EDIT / DELETE SECTION ---
         st.subheader("📝 Edit or Delete Client Details")
         
-        if not df.empty:
-            client_options = {f"{row['name']} (ID: {row['id']})": row['id'] for _, row in df.iterrows()}
+        client_options = {f"{row['name']} (ID: {row['id']})": row['id'] for _, row in filtered_df.iterrows()}
+        if client_options:
             selected_option = st.selectbox("Select a client to modify:", list(client_options.keys()))
             selected_id = client_options[selected_option]
-            
             client_info = df[df['id'] == selected_id].iloc[0]
             
             with st.expander(f"Modify Details for {client_info['name']}", expanded=True):
                 col1, col2 = st.columns(2)
                 with col1:
-                    edit_num = st.text_input("Client Number", value=str(client_info['client_num']))
+                    # FIX 4: Use number_input for editing as well
+                    edit_num = st.number_input("Client Number", value=int(client_info['client_num']))
                     edit_name = st.text_input("Customer Name", value=str(client_info['name']))
                     edit_uen = st.text_input("UEN", value=str(client_info['uen']))
                 with col2:
