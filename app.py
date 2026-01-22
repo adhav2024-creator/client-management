@@ -52,35 +52,33 @@ if check_password():
 
         st.divider()
 
-        # --- 4. MONTHLY YEAR-END SCHEDULE ---
-        st.subheader("🗓️ Year-End Calendar View")
-        st.write("Click on a month to see all clients closing their books.")
+        # --- 4. ANNUAL YEAR-END GRID ---
+        st.subheader("📅 Annual Year-End Schedule")
+        
+        # We create 4 columns across. 12 months / 4 = 3 rows.
+        rows = [MONTHS[i:i + 4] for i in range(0, len(MONTHS), 4)]
 
-        # Iterate through each month in order
-        for month in MONTHS:
-            # Filter clients for this month
-            monthly_clients = df[df['YEAR END'] == month]
-            
-            # Count for the label
-            count = len(monthly_clients)
-            label = f"{month} ({count} Clients)"
-            
-            # Create an expander for the month
-            with st.expander(label):
-                if not monthly_clients.empty:
-                    # Sort alphabetical within the month
-                    sorted_month = monthly_clients.sort_values(by='NAME')
+        for row_months in rows:
+            cols = st.columns(4)
+            for i, month in enumerate(row_months):
+                with cols[i]:
+                    # Month Header with styling
+                    st.markdown(f"### {month}")
                     
-                    # Display the table for this specific month
-                    st.dataframe(
-                        sorted_month[['CLIENT NUM', 'NAME', 'UEN', 'STATUS']], 
-                        use_container_width=True, 
-                        hide_index=True
-                    )
-                else:
-                    st.info(f"No clients have a Year-End in {month}.")
-
-        st.divider()
+                    # Filter data for this specific month
+                    month_data = df[df['YEAR END'] == month]
+                    
+                    if not month_data.empty:
+                        # Display a simplified table for each column
+                        # We only show Name and UEN to keep it compact
+                        st.dataframe(
+                            month_data[['NAME', 'UEN']], 
+                            use_container_width=True, 
+                            hide_index=True
+                        )
+                    else:
+                        st.caption("No clients")
+            st.write("") # Add spacing between rows
 
     # --- 5. SIDEBAR (ADD CLIENT) ---
     st.sidebar.header("Add New Client")
