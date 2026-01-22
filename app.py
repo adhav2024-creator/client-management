@@ -65,7 +65,8 @@ if check_password():
         # Adding a 'Total' column for completeness
         summary_df['TOTAL'] = summary_df.sum(axis=1)
 
-        st.table(summary_df)
+        # Use st.dataframe to allow hiding the index column
+        st.dataframe(summary_df, hide_index=True, use_container_width=True)
 
         st.write("---")
 
