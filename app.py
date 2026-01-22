@@ -43,26 +43,42 @@ if check_password():
         m_col1.metric("Total Clients", len(df))
         m_col2.metric("Active Portfolios", len(df[df['STATUS'] == 'Active']))
         m_col3.metric("Terminated", len(df[df['STATUS'] == 'Terminated']))
-
-        st.write("### 📅 Monthly Year-End Distribution")
-        # Prepare data for the chart
-        month_counts = df['YEAR END'].value_counts().reindex(MONTHS).fillna(0)
-        st.bar_chart(month_counts, color="#2E7D32")
+# --- 3. DASHBOARD & ANALYTICS ---
+        st.subheader("📊 Practice Overview")
+        m_col1, m_col2, m_col3 = st.columns(3)
+        m_col1.metric("Total Clients", len(df))
+        m_col2.metric("Active Portfolios", len(df[df['STATUS'] == 'Active']))
+        m_col3.metric("Terminated", len(df[df['STATUS'] == 'Terminated']))
 
         st.divider()
 
-        # --- 4. MONTHLY PORTFOLIO VIEWER ---
-        st.subheader("🔍 View by Month")
-        selected_view_month = st.selectbox("Select Month to see upcoming audits:", MONTHS)
-        
-        monthly_filtered = df[df['YEAR END'] == selected_view_month]
-        
-        if not monthly_filtered.empty:
-            st.success(f"Showing {len(monthly_filtered)} clients for {selected_view_month}")
-            st.dataframe(monthly_filtered[['CLIENT NUM', 'NAME', 'UEN', 'STATUS']], 
-                         use_container_width=True, hide_index=True)
-        else:
-            st.info(f"No clients have a Year-End in {selected_view_month}.")
+        # --- 4. MONTHLY YEAR-END SCHEDULE ---
+        st.subheader("🗓️ Year-End Calendar View")
+        st.write("Click on a month to see all clients closing their books.")
+
+        # Iterate through each month in order
+        for month in MONTHS:
+            # Filter clients for this month
+            monthly_clients = df[df['YEAR END'] == month]
+            
+            # Count for the label
+            count = len(monthly_clients)
+            label = f"{month} ({count} Clients)"
+            
+            # Create an expander for the month
+            with st.expander(label):
+                if not monthly_clients.empty:
+                    # Sort alphabetical within the month
+                    sorted_month = monthly_clients.sort_values(by='NAME')
+                    
+                    # Display the table for this specific month
+                    st.dataframe(
+                        sorted_month[['CLIENT NUM', 'NAME', 'UEN', 'STATUS']], 
+                        use_container_width=True, 
+                        hide_index=True
+                    )
+                else:
+                    st.info(f"No clients have a Year-End in {month}.")
 
         st.divider()
 
