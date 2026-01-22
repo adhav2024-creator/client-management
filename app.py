@@ -52,33 +52,22 @@ if check_password():
 
         st.divider()
 
-        # --- 4. ANNUAL YEAR-END GRID ---
-        st.subheader("📅 Annual Year-End Schedule")
-        
-        # We create 4 columns across. 12 months / 4 = 3 rows.
-        rows = [MONTHS[i:i + 4] for i in range(0, len(MONTHS), 4)]
+        # --- 4. MONTHLY COUNT TABLE ---
+        st.subheader("🗓️ Annual Year-End Schedule (Summary)")
 
-        for row_months in rows:
-            cols = st.columns(4)
-            for i, month in enumerate(row_months):
-                with cols[i]:
-                    # Month Header with styling
-                    st.markdown(f"### {month}")
-                    
-                    # Filter data for this specific month
-                    month_data = df[df['YEAR END'] == month]
-                    
-                    if not month_data.empty:
-                        # Display a simplified table for each column
-                        # We only show Name and UEN to keep it compact
-                        st.dataframe(
-                            month_data[['NAME', 'UEN']], 
-                            use_container_width=True, 
-                            hide_index=True
-                        )
-                    else:
-                        st.caption("No clients")
-            st.write("") # Add spacing between rows
+        # Generate the counts
+        month_counts = df['YEAR END'].value_counts().reindex(MONTHS).fillna(0).astype(int)
+
+        # Create a "Wide" table where Months are Columns and Count is the Row
+        # This creates a proper 'Proper Table' look
+        summary_df = pd.DataFrame([month_counts.values], columns=MONTHS)
+        
+        # Adding a 'Total' column for completeness
+        summary_df['TOTAL'] = summary_df.sum(axis=1)
+
+        st.table(summary_df)
+
+        st.write("---")
 
     # --- 5. SIDEBAR (ADD CLIENT) ---
     st.sidebar.header("Add New Client")
