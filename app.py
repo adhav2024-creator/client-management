@@ -53,7 +53,7 @@ if check_password():
         st.divider()
 
         # --- 4. MONTHLY COUNT TABLE ---
-        st.subheader("🗓️ Annual Year-End Schedule (Summary)")
+        st.subheader("Month Summary")
 
         # Generate the counts
         month_counts = df['YEAR END'].value_counts().reindex(MONTHS).fillna(0).astype(int)
